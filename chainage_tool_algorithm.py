@@ -22,23 +22,28 @@
  ***************************************************************************/
 """
 
-__author__ = 'Wayne'
-__date__ = '2024-07-25'
-__copyright__ = '(C) 2024 by Wayne'
+__author__ = "Wayne"
+__date__ = "2024-07-25"
+__copyright__ = "(C) 2024 by Wayne"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
-from qgis.PyQt.QtCore import QCoreApplication # WAYNE: QVariant可能会需要？
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
-                       QgsProcessingAlgorithm,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink)
+from qgis.PyQt.QtCore import QCoreApplication  # WAYNE: QVariant可能会需要？
+from qgis.core import (
+    QgsProcessing,
+    QgsFeatureSink,
+    QgsProcessingAlgorithm,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterField,
+    QgsProcessingParameterFeatureSink,
+)
+
 # WAYNE: 可能会需要：QgsVectorLayer, QgsField, QgsFeature, QgsGeometry,QgsPointXY, QgsProject
 # import pandas as pd
 # from math import radians, degrees, floor, ceil
+
 
 class ChainageToolAlgorithm(QgsProcessingAlgorithm):
     """
@@ -58,13 +63,17 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
     # used when calling the algorithm from another algorithm, or when
     # calling from the QGIS console.
 
-    OUTPUT = 'OUTPUT'
-    INPUT = 'INPUT'
+    OUTPUT = "OUTPUT"
+    INPUT = "INPUT"
+    DISTANCE = "DISTANCE"
+    START_MILEAGE = "START_MILEAGE"
+    END_MILEAGE = "END_MILEAGE"
 
     def initAlgorithm(self, config):
         """
         Here we define the inputs and output of the algorithm, along
         with some other properties.
+        所有的输入和输出都在这里定义,self.tr()中的字符串是名字.
         """
 
         # We add the input vector features source. It can have any kind of
@@ -72,8 +81,38 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
-                self.tr('Input layer'),
-                [QgsProcessing.TypeVectorAnyGeometry]
+                self.tr("Input layer"),
+                [QgsProcessing.TypeVectorAnyGeometry],
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.DISTANCE,
+                self.tr("Select interpolation distance field"),
+                None,
+                self.INPUT,
+                QgsProcessingParameterField.DataType.Any,
+                optional=True,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.START_MILEAGE,
+                self.tr("Select start mileage field"),
+                None,
+                self.INPUT,
+                QgsProcessingParameterField.DataType.Any,
+                optional=True,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.END_MILEAGE,
+                self.tr("Select end mileage field"),
+                None,
+                self.INPUT,
+                QgsProcessingParameterField.DataType.Any,
+                optional=True,
             )
         )
 
@@ -81,10 +120,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # usually takes the form of a newly created vector layer when the
         # algorithm is run in QGIS).
         self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT,
-                self.tr('Output layer')
-            )
+            QgsProcessingParameterFeatureSink(self.OUTPUT, self.tr("Output layer"))
         )
 
     def processAlgorithm(self, parameters, context, feedback):
@@ -96,8 +132,14 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
         source = self.parameterAsSource(parameters, self.INPUT, context)
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT,
-                context, source.fields(), source.wkbType(), source.sourceCrs())
+        (sink, dest_id) = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs(),
+        )
 
         # Compute the number of steps to display within the progress bar and
         # get features from source
@@ -131,7 +173,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Line interpolate equidistant points'
+        return "Line interpolate equidistant points"
 
     def displayName(self):
         """
@@ -155,10 +197,10 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         contain lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'Vector Algorithms'
+        return "Vector Algorithms"
 
     def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
+        return QCoreApplication.translate("Processing", string)
 
     def createInstance(self):
         return ChainageToolAlgorithm()
