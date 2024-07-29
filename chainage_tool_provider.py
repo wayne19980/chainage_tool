@@ -63,7 +63,7 @@ class ChainageToolProvider(QgsProcessingProvider):
         string should be a unique, short, character only string, eg "qgis" or
         "gdal". This string should not be localised.
         """
-        return 'Chainage provider'
+        return 'chainage'
 
     def name(self):
         """
@@ -72,7 +72,7 @@ class ChainageToolProvider(QgsProcessingProvider):
 
         This string should be short (e.g. "Lastools") and localised.
         """
-        return self.tr('Chainage provider')
+        return self.tr('Chainage Tools')
 
     def icon(self):
         """
