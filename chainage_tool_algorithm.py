@@ -40,6 +40,45 @@ from qgis.core import (
     QgsProcessingParameterFeatureSink,
 )
 
+
+"""https://docs.qgis.org/3.34/en/docs/pyqgis_developer_cookbook/vector.html
+from qgis.core import (
+  QgsApplication,
+  QgsDataSourceUri,
+  QgsCategorizedSymbolRenderer,
+  QgsClassificationRange,
+  QgsPointXY,
+  QgsProject,
+  QgsExpression,
+  QgsField,
+  QgsFields,
+  QgsFeature,
+  QgsFeatureRequest,
+  QgsFeatureRenderer,
+  QgsGeometry,
+  QgsGraduatedSymbolRenderer,
+  QgsMarkerSymbol,
+  QgsMessageLog,
+  QgsRectangle,
+  QgsRendererCategory,
+  QgsRendererRange,
+  QgsSymbol,
+  QgsVectorDataProvider,
+  QgsVectorLayer,
+  QgsVectorFileWriter,
+  QgsWkbTypes,
+  QgsSpatialIndex,
+  QgsVectorLayerUtils
+)
+
+from qgis.core.additions.edit import edit
+
+from qgis.PyQt.QtGui import (
+    QColor,
+)
+"""
+
+
 # WAYNE: 可能会需要：QgsVectorLayer, QgsField, QgsFeature, QgsGeometry,QgsPointXY, QgsProject
 # import pandas as pd
 # from math import radians, degrees, floor, ceil
@@ -65,6 +104,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
 
     OUTPUT = "OUTPUT"
     INPUT = "INPUT"
+    ID = "ID"
     DISTANCE = "DISTANCE"
     START_MILEAGE = "START_MILEAGE"
     END_MILEAGE = "END_MILEAGE"
@@ -87,8 +127,8 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterField(
-                self.DISTANCE,
-                self.tr("Select interpolation distance field"),
+                self.ID,
+                self.tr("Select identifier field"),
                 None,
                 self.INPUT,
                 QgsProcessingParameterField.DataType.Any,
@@ -109,6 +149,16 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterField(
                 self.END_MILEAGE,
                 self.tr("Select end mileage field"),
+                None,
+                self.INPUT,
+                QgsProcessingParameterField.DataType.Any,
+                optional=True,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.DISTANCE,
+                self.tr("Select interpolation distance field"),
                 None,
                 self.INPUT,
                 QgsProcessingParameterField.DataType.Any,
