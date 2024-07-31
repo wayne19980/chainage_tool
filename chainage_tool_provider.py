@@ -22,13 +22,13 @@
  ***************************************************************************/
 """
 
-__author__ = 'Wayne'
-__date__ = '2024-07-25'
-__copyright__ = '(C) 2024 by Wayne'
+__author__ = "Wayne"
+__date__ = "2024-07-25"
+__copyright__ = "(C) 2024 by Wayne"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
 from qgis.core import QgsProcessingProvider
 from .chainage_tool_algorithm import ChainageToolAlgorithm
@@ -41,6 +41,8 @@ class ChainageToolProvider(QgsProcessingProvider):
         Default constructor.
         """
         QgsProcessingProvider.__init__(self)
+        #geohey的算法数组
+        self.alglist = [ChainageToolAlgorithm,]
 
     def unload(self):
         """
@@ -53,9 +55,12 @@ class ChainageToolProvider(QgsProcessingProvider):
         """
         Loads all algorithms belonging to this provider.
         """
-        self.addAlgorithm(ChainageToolAlgorithm())
+        # self.addAlgorithm(ChainageToolAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
+        # geohey_toolbox的批量加载方法
+        for alg in self.alglist:
+            self.addAlgorithm(alg())
 
     def id(self):
         """
@@ -63,7 +68,7 @@ class ChainageToolProvider(QgsProcessingProvider):
         string should be a unique, short, character only string, eg "qgis" or
         "gdal". This string should not be localised.
         """
-        return 'chainage'
+        return "chainage"
 
     def name(self):
         """
@@ -72,7 +77,7 @@ class ChainageToolProvider(QgsProcessingProvider):
 
         This string should be short (e.g. "Lastools") and localised.
         """
-        return self.tr('Chainage Tools')
+        return self.tr("Chainage Tools")
 
     def icon(self):
         """

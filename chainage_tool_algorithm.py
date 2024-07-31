@@ -33,6 +33,7 @@ __revision__ = "$Format:%H$"
 from qgis.PyQt.QtCore import QCoreApplication  # WAYNE: QVariant可能会需要？
 from qgis.core import (
     QgsProcessing,
+    QgsFeature,
     QgsFeatureSink,
     QgsProcessingAlgorithm,
     QgsProcessingParameterFeatureSource,
@@ -200,6 +201,17 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             # Stop the algorithm if cancel button has been clicked
             if feedback.isCanceled():
                 break
+            # 处理开始
+            geom = feature.geometry()
+            attrs = feature.attributes()
+            geom_type = geom.wkbType()
+
+            feature_new = QgsFeature()
+
+            if geom_type != 1:
+                pass
+            else:
+                pass
 
             # Add a feature in the sink
             sink.addFeature(feature, QgsFeatureSink.FastInsert)
