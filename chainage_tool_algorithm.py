@@ -202,20 +202,60 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
             # 处理开始
+            # 1. Loop through line features, get Nth feature (geom + props)
             geom = feature.geometry()
             attrs = feature.attributes()
             geom_type = geom.wkbType()
-
-            feature_new = QgsFeature()
-
             if geom_type != 1:
-                pass
+            # 2. vLength = eM - sM = IN4 - IN3; vD = IN5;<-get from attrs[field input]
+                sM = feature[self.START_MILEAGE]
+                eM = feature[self.END_MILEAGE]
+                vLength = eM - sM
+                vD = feature[self.DISTANCE]
+                frac_list = []
+            # 3. Generate list of fraction of total length (0-1);
+                """
+                # Enable Python support and load DesignScript library
+                import clr
+                clr.AddReference('ProtoGeometry')
+                from Autodesk.DesignScript.Geometry import *
+
+                # The inputs to this node will be stored as a list in the IN variables.
+                dataEnteringNode = IN
+
+                # Place your code below this line
+                inone =IN[0]
+                intwo = IN[1]
+                s = IN[2]
+                o = []
+                for i in range(len(inone)):
+                sm = inone[i]
+                em = intwo[i]
+                hs = []
+                #m = sm
+                hm = int(sm/s+1)*s
+                #hm = int(sm/100+1)*100-50
+                if sm != hm:
+                    hs.append(sm)
+                while (hm < em):
+                    hs.append(hm)
+                    #hm += 100
+                    hm += s
+                hs.append(em)
+                o.append(hs)
+                # Assign your output to the OUT variable.
+                OUT = o
+                """
+            # 4. Interpolate point on line on $Length \* fraction; Add line props to points, return and add to feature sink;
+
+                for i in frac_list:
+                    feature_new = QgsFeature()
+                    # Add a feature in the sink
+                    sink.addFeature(feature_new, QgsFeatureSink.FastInsert)
             else:
                 pass
 
-            # Add a feature in the sink
-            sink.addFeature(feature, QgsFeatureSink.FastInsert)
-
+            # 5. Update Progress.
             # Update the progress bar
             feedback.setProgress(int(current * total))
 
