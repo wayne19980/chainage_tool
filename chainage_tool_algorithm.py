@@ -39,7 +39,12 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterFeatureSink,
+    #Added for chainage tool
+    QgsGeometry,
+    QgsField,
+    QgsFields,
 )
+from .chainagetool import points_along_line
 
 
 """https://docs.qgis.org/3.34/en/docs/pyqgis_developer_cookbook/vector.html
@@ -115,6 +120,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         Here we define the inputs and output of the algorithm, along
         with some other properties.
         所有的输入和输出都在这里定义,self.tr()中的字符串是名字.
+        # TODO: if field name is standard, fill in window straightaway(should be in init?)
         """
 
         # We add the input vector features source. It can have any kind of
@@ -178,7 +184,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         """
         Here is where the processing itself takes place.
         """
-
+        
         # Retrieve the feature source and sink. The 'dest_id' variable is used
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
@@ -266,6 +272,88 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # dictionary, with keys matching the feature corresponding parameter
         # or output names.
         return {self.OUTPUT: dest_id}
+    def create_points_at(startpoint,
+                     endpoint,
+                     distance,
+                     geom,
+                     fid,
+                     force,
+                    #  fo_fila,
+                     divide):
+        """
+        Creating Points at coordinates along the line
+        """
+        # don't allow distance to be zero and loop endlessly
+        # if fo_fila:
+        #     distance = 0
+
+        if distance <= 0:
+            distance = geom.length()
+
+        length = geom.length()
+
+        if length < endpoint:
+            endpoint = length
+
+        if divide > 0:
+            length2 = length
+            if startpoint > 0:
+                length2 = length - startpoint
+            if endpoint > 0:
+                length2 = endpoint
+            if startpoint > 0 and endpoint > 0:
+                length2 = endpoint - startpoint
+            distance = length2 / divide
+            current_distance = distance
+        else:
+            current_distance = distance
+
+        feats = []
+
+        if endpoint > 0:
+            length = endpoint
+
+        # set the first point at startpoint
+        point = geom.interpolate(startpoint)
+        # convert 3D geometry to 2D geometry as OGR seems to have problems with this
+        point = QgsGeometry.fromPointXY(point.asPoint())
+
+        field_id = QgsField(name="id", type=QVariant.Int)
+        field = QgsField(name="dist", type=QVariant.Double)
+        fields = QgsFields()
+
+        fields.append(field_id)
+        fields.append(field)
+
+        feature = QgsFeature(fields)
+        feature['dist'] = startpoint
+        feature['id'] = fid
+
+        feature.setGeometry(point)
+        feats.append(feature)
+
+        while startpoint + current_distance <= length:
+            # Get a point along the line at the current distance
+            point = geom.interpolate(startpoint + current_distance)
+            # Create a new QgsFeature and assign it the new geometry
+            feature = QgsFeature(fields)
+            feature['dist'] = (startpoint + current_distance)
+            feature['id'] = fid
+            feature.setGeometry(point)
+            feats.append(feature)
+            # Increase the distance
+            current_distance = current_distance + distance
+
+        # set the last point at endpoint if wanted
+        if force is True:
+            end = geom.length()
+            point = geom.interpolate(end)
+            feature = QgsFeature(fields)
+            feature['dist'] = end
+            feature['id'] = fid
+            feature.setGeometry(point)
+            feats.append(feature)
+        return feats
 
     def name(self):
         """
@@ -306,3 +394,4 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
 
     def createInstance(self):
         return ChainageToolAlgorithm()
+
