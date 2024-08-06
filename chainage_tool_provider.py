@@ -32,6 +32,7 @@ __revision__ = "$Format:%H$"
 
 from qgis.core import QgsProcessingProvider
 from .chainage_tool_algorithm import ChainageToolAlgorithm
+from .chainage_tool_algorithm import ChainageToolAddField
 
 
 class ChainageToolProvider(QgsProcessingProvider):
@@ -42,7 +43,7 @@ class ChainageToolProvider(QgsProcessingProvider):
         """
         QgsProcessingProvider.__init__(self)
         #geohey的算法数组
-        self.alglist = [ChainageToolAlgorithm,]
+        self.alglist = [ChainageToolAddField,ChainageToolAlgorithm,]
 
     def unload(self):
         """
