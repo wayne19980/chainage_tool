@@ -44,8 +44,8 @@ from qgis.core import (
     QgsGeometry,
     QgsField,
     QgsFields,
+    Qgis,
 )
-from .chainagetool import points_along_line
 
 
 """https://docs.qgis.org/3.34/en/docs/pyqgis_developer_cookbook/vector.html
@@ -182,87 +182,91 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         )
 
     def processAlgorithm(self, parameters, context, feedback):
-        def create_points_at(
-                startpoint,
-                endpoint,
-                distance,
+        def interpolate_by_vmileage(
+                vStart,
+                vEnd,
+                vDis,
                 geom,
                 fid,
-                force,
-                vLength,
+                # force,
             ):
                 """
                 Creating Points at coordinates along the line
                 """
+                vLength = vEnd-vStart
+                
                 # don't allow distance to be zero and loop endlessly
                 # if fo_fila:
                 #     distance = 0
 
-                # 如果间距为负，设为线段长
-
-                if distance <= 0:
-                    distance = geom.length()
+                                # 如果间距为负，设为线段长
+                if vDis <= 0:
+                    vDis = vLength
+                    # vDis = geom.length()
 
                 length = geom.length()
+                lengthRatio = length/vLength
+                dis = vDis*lengthRatio
+                """
                 # 如果终点长>总长，设为总长
-                if length < endpoint:
-                    endpoint = length
+                if length < vEnd:
+                    vEnd = length
                 # 如果等分有值，复制一份length2，如果起终点有值，再减去
                 if divide > 0:
                     length2 = length
-                    if startpoint > 0:
-                        length2 = length - startpoint
-                    if endpoint > 0:
-                        length2 = endpoint
-                    if startpoint > 0 and endpoint > 0:
-                        length2 = endpoint - startpoint  # length-(length-endpoint)-startpoint
-                    distance = length2 / divide
-                    current_distance = distance
+                    if vStart > 0:
+                        length2 = length - vStart
+                    if vEnd > 0:
+                        length2 = vEnd
+                    if vStart > 0 and vEnd > 0:
+                        length2 = vEnd - vStart  # length-(length-endpoint)-startpoint
+                    vDis = length2 / divide
+                    dis = vDis
                 else:
-                    current_distance = distance
+                    dis = vDis
+
+                if vEnd > 0:
+                    length = vEnd
+                """
 
                 feats = []
 
-                if endpoint > 0:
-                    length = endpoint
-
-                # set the first point at startpoint
-                point = geom.interpolate(startpoint)
-                # convert 3D geometry to 2D geometry as OGR seems to have problems with this
-                point = QgsGeometry.fromPointXY(point.asPoint())
-
+                # define fields
                 fields = QgsFields()
-                fields.append( QgsField(name="id", type=QVariant.Int))
+                # fields.append( QgsField(name="id", type=QVariant.Int))
+                fields.append( QgsField(name="line_id", type=QVariant.Int))
+                fields.append(QgsField(name="mileage_value", type=QVariant.Double))
                 fields.append(QgsField(name="dist", type=QVariant.Double))
 
-                feature = QgsFeature(fields)
-                feature["dist"] = startpoint
-                feature["id"] = fid
-
-                feature.setGeometry(point)
-                feats.append(feature)
-
-                while startpoint + current_distance <= length:
+                def add_interpolate_custom(geom,length,mileage_value,id):
                     # Get a point along the line at the current distance
-                    point = geom.interpolate(startpoint + current_distance)
+                    point = geom.interpolate(length)
                     # Create a new QgsFeature and assign it the new geometry
                     feature = QgsFeature(fields)
-                    feature["dist"] = startpoint + current_distance
-                    feature["id"] = fid
                     feature.setGeometry(point)
+                    feature["dist"] = length
+                    feature["mileage_value"] = mileage_value
+                    feature["line_id"] = id
                     feats.append(feature)
-                    # Increase the distance
-                    current_distance = current_distance + distance
 
-                # set the last point at endpoint if wanted
-                if force is True:
-                    end = geom.length()
-                    point = geom.interpolate(end)
-                    feature = QgsFeature(fields)
-                    feature["dist"] = end
-                    feature["id"] = fid
-                    feature.setGeometry(point)
-                    feats.append(feature)
+                current_dis = 0
+                current_mileage = vStart
+
+                if current_mileage != round(vStart/vDis+1)*vDis:
+                    add_interpolate_custom(geom,current_dis,current_mileage,fid)
+                    current_mileage = round(vStart/vDis+1)*vDis
+                    current_dis = (round(vStart/vDis+1)*vDis-vStart)*lengthRatio
+                    ##不对的，忘记比例换算了
+
+                while current_dis < length:
+                    add_interpolate_custom(geom,current_dis,current_mileage,fid)
+                    # Increase the distance
+                    current_dis += dis
+                    current_mileage += vDis
+
+                # set the last point at endpoint
+                end = geom.length()
+                add_interpolate_custom(geom,end,vEnd,fid)
                 return feats
 
         """
@@ -273,12 +277,18 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # to uniquely identify the feature sink, and must be included in the
         # dictionary returned by the processAlgorithm function.
         source = self.parameterAsSource(parameters, self.INPUT, context)
+        # define fields
+        custom_fields = QgsFields()
+        # fields.append( QgsField(name="id", type=QVariant.Int))
+        custom_fields.append( QgsField(name="line_id", type=QVariant.Int))
+        custom_fields.append(QgsField(name="mileage_value", type=QVariant.Double))
+        custom_fields.append(QgsField(name="dist", type=QVariant.Double))
         (sink, dest_id) = self.parameterAsSink(
             parameters,
             self.OUTPUT,
             context,
-            source.fields(),
-            source.wkbType(),
+            custom_fields,
+            Qgis.WkbType(1),
             source.sourceCrs(),
         )
 
@@ -292,67 +302,38 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
             # 处理开始
+            # TODO: 如果是三维线，转成二维，因为桩号不考虑高程
             # 1. Loop through line features, get Nth feature (geom + props)
             geom = feature.geometry()
             attrs = feature.attributes()
             geom_type = geom.wkbType()
-            if geom_type != 1:
-                # 2. vLength = eM - sM = IN4 - IN3; vD = IN5;<-get from attrs[field input]
-                sM = feature[self.START_MILEAGE]
-                eM = feature[self.END_MILEAGE]
-                vLength = eM - sM
-                vD = feature[self.DISTANCE]
-                id = feature[self.ID]
-                # 3. Generate list of fraction of total length (0-1);
-                frac_list = create_points_at(
-                    startpoint=sM,
-                    endpoint=eM,
-                    distance=vD,
-                    vLength=vLength,
-                    geom=geom,
-                    fid=id,
-                )
+            # Pass looping if feature is not polyline
+            # if geom_type != 1:
+            #     pass
+            # else:
+            # 2. vLength = eM - sM = IN4 - IN3; vD = IN5;<-get from attrs[field input]
+            # sM = feature[self.START_MILEAGE]
+            # eM = feature[self.END_MILEAGE]
+            # vD = feature[self.DISTANCE]
+            # id = feature[self.ID]
+            sM = feature["sm"]
+            eM = feature["em"]
+            vD = feature["di"]
+            id = feature["id"]
+            # 3. ~~Generate list of fraction of total length (0-1);~~
+            # Generate point array directly and add to sink
+            frac_list = interpolate_by_vmileage(
+                vStart=sM,
+                vEnd=eM,
+                vDis=vD,
+                geom=geom,
+                fid=id,
+            )
+            # 4. Interpolate point on line on $Length \* fraction; Add line props to points, return and add to feature sink;
 
-                """
-                # Enable Python support and load DesignScript library
-                import clr
-                clr.AddReference('ProtoGeometry')
-                from Autodesk.DesignScript.Geometry import *
-
-                # The inputs to this node will be stored as a list in the IN variables.
-                dataEnteringNode = IN
-
-                # Place your code below this line
-                inone =IN[0]
-                intwo = IN[1]
-                s = IN[2]
-                o = []
-                for i in range(len(inone)):
-                sm = inone[i]
-                em = intwo[i]
-                hs = []
-                #m = sm
-                hm = int(sm/s+1)*s
-                #hm = int(sm/100+1)*100-50
-                if sm != hm:
-                    hs.append(sm)
-                while (hm < em):
-                    hs.append(hm)
-                    #hm += 100
-                    hm += s
-                hs.append(em)
-                o.append(hs)
-                # Assign your output to the OUT variable.
-                OUT = o
-                """
-                # 4. Interpolate point on line on $Length \* fraction; Add line props to points, return and add to feature sink;
-
-                for i in frac_list:
-                    feature_new = QgsFeature()
-                    # Add a feature in the sink
-                    sink.addFeature(feature_new, QgsFeatureSink.FastInsert)
-            else:
-                pass
+            for i in frac_list:
+                # Add a feature in the sink
+                sink.addFeature(i, QgsFeatureSink.FastInsert)
 
             # 5. Update Progress.
             # Update the progress bar
