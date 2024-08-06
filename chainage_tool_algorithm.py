@@ -30,8 +30,8 @@ __copyright__ = "(C) 2024 by Wayne"
 
 __revision__ = "$Format:%H$"
 
-# WAYNE: 需要添加和删除属性需要导入QVariant
-from qgis.PyQt.QtCore import QCoreApplication, QVariant
+# WAYNE: 需要添加和删除属性需要导入QVariant->3.38之后的版本替换成QMetaType
+from qgis.PyQt.QtCore import QCoreApplication, QMetaType
 from qgis.core import (
     QgsProcessing,
     QgsFeature,
@@ -233,10 +233,10 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
 
                 # define fields
                 fields = QgsFields()
-                # fields.append( QgsField(name="id", type=QVariant.Int))
-                fields.append( QgsField(name="line_id", type=QVariant.Int))
-                fields.append(QgsField(name="mileage_value", type=QVariant.Double))
-                fields.append(QgsField(name="dist", type=QVariant.Double))
+                # fields.append( QgsField(name="id", type=QMetaType.Int))
+                fields.append( QgsField(name="line_id", type=QMetaType.Int))
+                fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
+                fields.append(QgsField(name="dist", type=QMetaType.Double))
 
                 def add_interpolate_custom(geom,length,mileage_value,id):
                     # Get a point along the line at the current distance
@@ -279,10 +279,10 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         source = self.parameterAsSource(parameters, self.INPUT, context)
         # define fields
         custom_fields = QgsFields()
-        # fields.append( QgsField(name="id", type=QVariant.Int))
-        custom_fields.append( QgsField(name="line_id", type=QVariant.Int))
-        custom_fields.append(QgsField(name="mileage_value", type=QVariant.Double))
-        custom_fields.append(QgsField(name="dist", type=QVariant.Double))
+        # fields.append( QgsField(name="id", type=QMetaType.Int))
+        custom_fields.append( QgsField(name="line_id", type=QMetaType.Int))
+        custom_fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
+        custom_fields.append(QgsField(name="dist", type=QMetaType.Double))
         (sink, dest_id) = self.parameterAsSink(
             parameters,
             self.OUTPUT,
@@ -312,14 +312,14 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             #     pass
             # else:
             # 2. vLength = eM - sM = IN4 - IN3; vD = IN5;<-get from attrs[field input]
-            # sM = feature[self.START_MILEAGE]
-            # eM = feature[self.END_MILEAGE]
-            # vD = feature[self.DISTANCE]
-            # id = feature[self.ID]
-            sM = feature["sm"]
-            eM = feature["em"]
-            vD = feature["di"]
-            id = feature["id"]
+            sM = feature[parameters[self.START_MILEAGE]]
+            eM = feature[parameters[self.END_MILEAGE]]
+            vD = feature[parameters[self.DISTANCE]]
+            id = feature[parameters[self.ID]]
+            # sM = feature["sm"]
+            # eM = feature["em"]
+            # vD = feature["di"]
+            # id = feature["id"]
             # 3. ~~Generate list of fraction of total length (0-1);~~
             # Generate point array directly and add to sink
             frac_list = interpolate_by_vmileage(
