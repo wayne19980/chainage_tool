@@ -30,7 +30,15 @@ __copyright__ = "(C) 2024 by Wayne"
 
 __revision__ = "$Format:%H$"
 
-# WAYNE: 需要添加和删除属性需要导入QVariant->3.38之后的版本替换成QMetaType
+"""
+Import Note
+需要添加和删除属性需要导入QVariant->3.38之后的版本替换成QMetaType
+可能会需要：
+QgsVectorLayer, QgsField, QgsFeature, QgsGeometry,QgsPointXY, QgsProject
+import pandas as pd
+from math import radians, degrees, floor, ceil
+"""
+
 from qgis.PyQt.QtCore import QCoreApplication, QMetaType
 from qgis.core import (
     QgsProcessing,
@@ -40,7 +48,6 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterFeatureSink,
-    # Added for chainage tool
     QgsGeometry,
     QgsField,
     QgsFields,
@@ -48,47 +55,6 @@ from qgis.core import (
 )
 
 
-"""https://docs.qgis.org/3.34/en/docs/pyqgis_developer_cookbook/vector.html
-from qgis.core import (
-  QgsApplication,
-  QgsDataSourceUri,
-  QgsCategorizedSymbolRenderer,
-  QgsClassificationRange,
-  QgsPointXY,
-  QgsProject,
-  QgsExpression,
-  QgsField,
-  QgsFields,
-  QgsFeature,
-  QgsFeatureRequest,
-  QgsFeatureRenderer,
-  QgsGeometry,
-  QgsGraduatedSymbolRenderer,
-  QgsMarkerSymbol,
-  QgsMessageLog,
-  QgsRectangle,
-  QgsRendererCategory,
-  QgsRendererRange,
-  QgsSymbol,
-  QgsVectorDataProvider,
-  QgsVectorLayer,
-  QgsVectorFileWriter,
-  QgsWkbTypes,
-  QgsSpatialIndex,
-  QgsVectorLayerUtils
-)
-
-from qgis.core.additions.edit import edit
-
-from qgis.PyQt.QtGui import (
-    QColor,
-)
-"""
-
-
-# WAYNE: 可能会需要：QgsVectorLayer, QgsField, QgsFeature, QgsGeometry,QgsPointXY, QgsProject
-# import pandas as pd
-# from math import radians, degrees, floor, ceil
 class ChainageToolAddField(QgsProcessingAlgorithm):
     """
     This is an example algorithm that takes a vector layer and
@@ -114,8 +80,6 @@ class ChainageToolAddField(QgsProcessingAlgorithm):
         """
         Here we define the inputs and output of the algorithm, along
         with some other properties.
-        所有的输入和输出都在这里定义,self.tr()中的字符串是名字.
-        # TODO: if field name is standard, fill in window straightaway(should be in init?)
         """
 
         # We add the input vector features source. It can have any kind of
@@ -334,9 +298,6 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             vLength = vEnd - vStart
 
             # don't allow distance to be zero and loop endlessly
-            # if fo_fila:
-            #     distance = 0
-
             # 如果间距为负，设为线段长
             if vDis <= 0:
                 vDis = vLength
@@ -456,10 +417,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             eM = feature[parameters[self.END_MILEAGE]]
             vD = feature[parameters[self.DISTANCE]]
             id = feature[parameters[self.ID]]
-            # sM = feature["sm"]
-            # eM = feature["em"]
-            # vD = feature["di"]
-            # id = feature["id"]
+
             # 3. ~~Generate list of fraction of total length (0-1);~~
             # Generate point array directly and add to sink
             frac_list = interpolate_by_vmileage(
