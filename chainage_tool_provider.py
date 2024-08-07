@@ -33,6 +33,7 @@ __revision__ = "$Format:%H$"
 from qgis.core import QgsProcessingProvider
 from .chainage_tool_algorithm import ChainageToolAlgorithm
 from .chainage_tool_algorithm import ChainageToolAddField
+from PyQt5.QtGui import QIcon
 
 
 class ChainageToolProvider(QgsProcessingProvider):
@@ -85,7 +86,8 @@ class ChainageToolProvider(QgsProcessingProvider):
         Should return a QIcon which is used for your provider inside
         the Processing toolbox.
         """
-        return QgsProcessingProvider.icon(self)
+        # return QgsProcessingProvider.icon(self)
+        return QIcon(":images/themes/default/mActionAddPolyline.svg")
 
     def longName(self):
         """
