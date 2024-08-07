@@ -136,7 +136,6 @@ class ChainageToolAddField(QgsProcessingAlgorithm):
         )
 
     def processAlgorithm(self, parameters, context, feedback):
-
         """
         Here is where the processing itself takes place.
         """
@@ -188,7 +187,6 @@ class ChainageToolAddField(QgsProcessingAlgorithm):
         # dictionary, with keys matching the feature corresponding parameter
         # or output names.
         return {self.OUTPUT: dest_id}
-
 
     def name(self):
         """
@@ -323,31 +321,31 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
 
     def processAlgorithm(self, parameters, context, feedback):
         def interpolate_by_vmileage(
-                vStart,
-                vEnd,
-                vDis,
-                geom,
-                fid,
-                # force,
-            ):
-                """
-                Creating Points at coordinates along the line
-                """
-                vLength = vEnd-vStart
-                
-                # don't allow distance to be zero and loop endlessly
-                # if fo_fila:
-                #     distance = 0
+            vStart,
+            vEnd,
+            vDis,
+            geom,
+            fid,
+            # force,
+        ):
+            """
+            Creating Points at coordinates along the line
+            """
+            vLength = vEnd - vStart
 
-                                # 如果间距为负，设为线段长
-                if vDis <= 0:
-                    vDis = vLength
-                    # vDis = geom.length()
+            # don't allow distance to be zero and loop endlessly
+            # if fo_fila:
+            #     distance = 0
 
-                length = geom.length()
-                lengthRatio = length/vLength
-                dis = vDis*lengthRatio
-                """
+            # 如果间距为负，设为线段长
+            if vDis <= 0:
+                vDis = vLength
+                # vDis = geom.length()
+
+            length = geom.length()
+            lengthRatio = length / vLength
+            dis = vDis * lengthRatio
+            """
                 # 如果终点长>总长，设为总长
                 if length < vEnd:
                     vEnd = length
@@ -369,45 +367,47 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
                     length = vEnd
                 """
 
-                feats = []
+            feats = []
 
-                # define fields
-                fields = QgsFields()
-                # fields.append( QgsField(name="id", type=QMetaType.Int))
-                fields.append( QgsField(name="line_id", type=QMetaType.Int))
-                fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
-                fields.append(QgsField(name="dist", type=QMetaType.Double))
+            # define fields
+            fields = QgsFields()
+            # fields.append( QgsField(name="id", type=QMetaType.Int))
+            fields.append(QgsField(name="line_id", type=QMetaType.Int))
+            fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
+            fields.append(QgsField(name="dist", type=QMetaType.Double))
 
-                def add_interpolate_custom(geom,length,mileage_value,id):
-                    # Get a point along the line at the current distance
-                    point = geom.interpolate(length)
-                    # Create a new QgsFeature and assign it the new geometry
-                    feature = QgsFeature(fields)
-                    feature.setGeometry(point)
-                    feature["dist"] = length
-                    feature["mileage_value"] = mileage_value
-                    feature["line_id"] = id
-                    feats.append(feature)
+            def add_interpolate_custom(geom, length, mileage_value, id):
+                # Get a point along the line at the current distance
+                point = geom.interpolate(length)
+                # Create a new QgsFeature and assign it the new geometry
+                feature = QgsFeature(fields)
+                feature.setGeometry(point)
+                feature["dist"] = length
+                feature["mileage_value"] = mileage_value
+                feature["line_id"] = id
+                feats.append(feature)
 
-                current_dis = 0
-                current_mileage = vStart
+            current_dis = 0
+            current_mileage = vStart
 
-                if current_mileage != round(vStart/vDis+1)*vDis:
-                    add_interpolate_custom(geom,current_dis,current_mileage,fid)
-                    current_mileage = round(vStart/vDis+1)*vDis
-                    current_dis = (round(vStart/vDis+1)*vDis-vStart)*lengthRatio
-                    ##不对的，忘记比例换算了
+            if current_mileage != round(vStart / vDis + 1) * vDis:
+                add_interpolate_custom(geom, current_dis, current_mileage, fid)
+                current_mileage = round(vStart / vDis + 1) * vDis
+                current_dis = (round(vStart / vDis + 1) * vDis - vStart) * lengthRatio
+                ##不对的，忘记比例换算了
 
-                while current_dis + dis< length: #条件：当下一个点还在范围内（先用老办法，按道理这样会避免最后一个点进去）
-                    add_interpolate_custom(geom,current_dis,current_mileage,fid)
-                    # Increase the distance
-                    current_dis += dis
-                    current_mileage += vDis
+            while (
+                current_dis + dis < length
+            ):  # 条件：当下一个点还在范围内（先用老办法，按道理这样会避免最后一个点进去）
+                add_interpolate_custom(geom, current_dis, current_mileage, fid)
+                # Increase the distance
+                current_dis += dis
+                current_mileage += vDis
 
-                # set the last point at endpoint
-                end = geom.length()
-                add_interpolate_custom(geom,end,vEnd,fid)
-                return feats
+            # set the last point at endpoint
+            end = geom.length()
+            add_interpolate_custom(geom, end, vEnd, fid)
+            return feats
 
         """
         Here is where the processing itself takes place.
@@ -420,7 +420,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # define fields
         custom_fields = QgsFields()
         # fields.append( QgsField(name="id", type=QMetaType.Int))
-        custom_fields.append( QgsField(name="line_id", type=QMetaType.Int))
+        custom_fields.append(QgsField(name="line_id", type=QMetaType.Int))
         custom_fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
         custom_fields.append(QgsField(name="dist", type=QMetaType.Double))
         (sink, dest_id) = self.parameterAsSink(
@@ -486,7 +486,6 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # dictionary, with keys matching the feature corresponding parameter
         # or output names.
         return {self.OUTPUT: dest_id}
-
 
     def name(self):
         """
