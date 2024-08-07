@@ -1,8 +1,8 @@
 # Readme
 
-This tool provides utility to convert line to chainage points.  
+> This tool provides utility to convert line to chainage points.  
 
-# Usage
+## Usage
 
 Copy the plugin folder in to your QGIS plugin directory, and enable it in the QGIS plugin manager.  
 
