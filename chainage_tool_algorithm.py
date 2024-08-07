@@ -53,6 +53,7 @@ from qgis.core import (
     QgsFields,
     Qgis,
 )
+from math import ceil
 
 
 class ChainageToolAddField(QgsProcessingAlgorithm):
@@ -351,14 +352,14 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             current_dis = 0
             current_mileage = vStart
 
-            if current_mileage != round(vStart / vDis + 1) * vDis:
+            if current_mileage != ceil(vStart / vDis ) * vDis:
                 add_interpolate_custom(geom, current_dis, current_mileage, fid)
-                current_mileage = round(vStart / vDis + 1) * vDis
-                current_dis = (round(vStart / vDis + 1) * vDis - vStart) * lengthRatio
+                current_mileage = ceil(vStart / vDis) * vDis
+                current_dis = (ceil(vStart / vDis) * vDis - vStart) * lengthRatio
                 ##不对的，忘记比例换算了
 
             while (
-                current_mileage + vDis < vEnd
+                current_mileage < vEnd
                 # current_dis + dis < length
             ):  # 条件：当下一个点还在范围内（先用老办法，按道理这样会避免最后一个点进去）
                 add_interpolate_custom(geom, current_dis, current_mileage, fid)
