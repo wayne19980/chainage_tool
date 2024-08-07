@@ -358,7 +358,8 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
                 ##不对的，忘记比例换算了
 
             while (
-                current_dis + dis < length
+                current_mileage + vDis < vEnd
+                # current_dis + dis < length
             ):  # 条件：当下一个点还在范围内（先用老办法，按道理这样会避免最后一个点进去）
                 add_interpolate_custom(geom, current_dis, current_mileage, fid)
                 # Increase the distance
