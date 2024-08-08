@@ -39,7 +39,7 @@ import pandas as pd
 from math import radians, degrees, floor, ceil
 """
 
-from qgis.PyQt.QtCore import QCoreApplication, QMetaType
+from qgis.PyQt.QtCore import QCoreApplication, QVariant, QMetaType
 from qgis.core import (
     QgsProcessing,
     QgsFeature,
@@ -111,11 +111,11 @@ class ChainageToolAddField(QgsProcessingAlgorithm):
         source = self.parameterAsSource(parameters, self.INPUT, context)
         # define fields
         custom_fields = QgsFields()
-        # fields.append( QgsField(name="id", type=QMetaType.Int))
-        custom_fields.append(QgsField(name="line_id", type=QMetaType.Int))
-        custom_fields.append(QgsField(name="start_mileage", type=QMetaType.Double))
-        custom_fields.append(QgsField(name="end_mileage", type=QMetaType.Double))
-        custom_fields.append(QgsField(name="distance", type=QMetaType.Double))
+        # fields.append( QgsField(name="id", type=QVariant.Int))
+        custom_fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
+        custom_fields.append(QgsField("start_mileage", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
+        custom_fields.append(QgsField("end_mileage", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
+        custom_fields.append(QgsField("distance", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
         (sink, dest_id) = self.parameterAsSink(
             parameters,
             self.OUTPUT,
@@ -333,10 +333,10 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
 
             # define fields
             fields = QgsFields()
-            # fields.append( QgsField(name="id", type=QMetaType.Int))
-            fields.append(QgsField(name="line_id", type=QMetaType.Int))
-            fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
-            fields.append(QgsField(name="dist", type=QMetaType.Double))
+            # fields.append( QgsField(name="id", type=QVariant.Int))
+            fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
+            fields.append(QgsField("mileage_value", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
+            fields.append(QgsField("dist", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
 
             def add_interpolate_custom(geom, length, mileage_value, id):
                 # Get a point along the line at the current distance
@@ -352,14 +352,15 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             current_dis = 0
             current_mileage = vStart
 
-            if current_mileage != ceil(vStart / vDis ) * vDis:
+            if current_mileage != ceil(vStart / vDis) * vDis:
                 add_interpolate_custom(geom, current_dis, current_mileage, fid)
                 current_mileage = ceil(vStart / vDis) * vDis
                 current_dis = (ceil(vStart / vDis) * vDis - vStart) * lengthRatio
                 ##不对的，忘记比例换算了
 
             while (
-                current_mileage < vEnd
+                current_mileage
+                < vEnd
                 # current_dis + dis < length
             ):  # 条件：当下一个点还在范围内（先用老办法，按道理这样会避免最后一个点进去）
                 add_interpolate_custom(geom, current_dis, current_mileage, fid)
@@ -382,10 +383,10 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         source = self.parameterAsSource(parameters, self.INPUT, context)
         # define fields
         custom_fields = QgsFields()
-        # fields.append( QgsField(name="id", type=QMetaType.Int))
-        custom_fields.append(QgsField(name="line_id", type=QMetaType.Int))
-        custom_fields.append(QgsField(name="mileage_value", type=QMetaType.Double))
-        custom_fields.append(QgsField(name="dist", type=QMetaType.Double))
+        # fields.append( QgsField(name="id", type=QVariant.Int))
+        custom_fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
+        custom_fields.append(QgsField("mileage_value", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
+        custom_fields.append(QgsField("dist", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
         (sink, dest_id) = self.parameterAsSink(
             parameters,
             self.OUTPUT,
