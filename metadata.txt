@@ -4,7 +4,7 @@
 
 [general]
 name=Chainage Tool
-qgisMinimumVersion=3.38
+qgisMinimumVersion=3.0
 description=This tool provides utility to convert line to chainage points.
 version=1.1
 author=Wayne
