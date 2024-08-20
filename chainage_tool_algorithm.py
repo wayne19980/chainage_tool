@@ -54,6 +54,7 @@ from qgis.core import (
     Qgis,
 )
 from math import ceil
+import copy
 
 
 class ChainageToolAddField(QgsProcessingAlgorithm):
@@ -110,7 +111,7 @@ class ChainageToolAddField(QgsProcessingAlgorithm):
         # dictionary returned by the processAlgorithm function.
         source = self.parameterAsSource(parameters, self.INPUT, context)
         # define fields
-        custom_fields = QgsFields()
+        custom_fields = source.fields()
         # fields.append( QgsField(name="id", type=QVariant.Int))
         custom_fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
         custom_fields.append(QgsField("start_mileage", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
@@ -291,6 +292,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             vDis,
             geom,
             fid,
+            sr_attrs,
             # force,
         ):
             """
@@ -331,22 +333,25 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
 
             feats = []
 
-            # define fields
-            fields = QgsFields()
-            # fields.append( QgsField(name="id", type=QVariant.Int))
-            fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
-            fields.append(QgsField("mileage_value", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
-            fields.append(QgsField("dist", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
+            # # define fields
+            # fields = QgsFields()
+            # # fields.append( QgsField(name="id", type=QVariant.Int))
+            # fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
+            # fields.append(QgsField("mileage_value", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
+            # fields.append(QgsField("dist", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
 
             def add_interpolate_custom(geom, length, mileage_value, id):
                 # Get a point along the line at the current distance
                 point = geom.interpolate(length)
                 # Create a new QgsFeature and assign it the new geometry
-                feature = QgsFeature(fields)
+                feature = QgsFeature(custom_fields)
                 feature.setGeometry(point)
-                feature["dist"] = length
-                feature["mileage_value"] = mileage_value
-                feature["line_id"] = id
+                tem_attrs=copy.copy(sr_attrs)
+                tem_attrs.extend([mileage_value,length])
+                feature.setAttributes(tem_attrs)
+                # feature["dist"] = length
+                # feature["mileage_value"] = mileage_value
+                # feature["line_id"] = id
                 feats.append(feature)
 
             current_dis = 0
@@ -382,9 +387,9 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         # dictionary returned by the processAlgorithm function.
         source = self.parameterAsSource(parameters, self.INPUT, context)
         # define fields
-        custom_fields = QgsFields()
+        custom_fields = source.fields()
         # fields.append( QgsField(name="id", type=QVariant.Int))
-        custom_fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
+        # custom_fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
         custom_fields.append(QgsField("mileage_value", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
         custom_fields.append(QgsField("dist", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
         (sink, dest_id) = self.parameterAsSink(
@@ -429,6 +434,7 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
                 vDis=vD,
                 geom=geom,
                 fid=id,
+                sr_attrs=attrs,
             )
             # 4. Interpolate point on line on $Length \* fraction; Add line props to points, return and add to feature sink;
 
