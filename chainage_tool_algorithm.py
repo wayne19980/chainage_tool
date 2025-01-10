@@ -226,7 +226,6 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
         Here we define the inputs and output of the algorithm, along
         with some other properties.
         所有的输入和输出都在这里定义,self.tr()中的字符串是名字.
-        # TODO: if field name is standard, fill in window straightaway(should be in init?)
         """
 
         # We add the input vector features source. It can have any kind of
@@ -235,14 +234,14 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr("Input layer"),
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.TypeVectorLine],
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.ID,
                 self.tr("Select identifier field"),
-                None,
+                "line_id",
                 self.INPUT,
                 QgsProcessingParameterField.DataType.Any,
                 optional=True,
@@ -252,9 +251,9 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterField(
                 self.START_MILEAGE,
                 self.tr("Select start mileage field"),
-                None,
+                "start_mileage",
                 self.INPUT,
-                QgsProcessingParameterField.DataType.Any,
+                QgsProcessingParameterField.DataType.Numeric,
                 optional=True,
             )
         )
@@ -262,9 +261,9 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterField(
                 self.END_MILEAGE,
                 self.tr("Select end mileage field"),
-                None,
+                "end_mileage",
                 self.INPUT,
-                QgsProcessingParameterField.DataType.Any,
+                QgsProcessingParameterField.DataType.Numeric,
                 optional=True,
             )
         )
@@ -272,9 +271,9 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterField(
                 self.DISTANCE,
                 self.tr("Select interpolation distance field"),
-                None,
+                "distance",
                 self.INPUT,
-                QgsProcessingParameterField.DataType.Any,
+                QgsProcessingParameterField.DataType.Numeric,
                 optional=True,
             )
         )
@@ -325,39 +324,9 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             print()
             lengthRatio = length / vLength
             dis = vDis * lengthRatio
-            print("vStart:", vStart, "vEnd:", vEnd, "vLength:", vLength, "vDis:", vDis, "dis:", dis, "length:", length)
-
-            QgsMessageLog.logMessage(f"vStart {vStart}, vEnd {vEnd},vLength {vLength},vDis {vDis},dis {dis},length {length}", "Chainage Tools",0)
-            """
-                # 如果终点长>总长，设为总长
-                if length < vEnd:
-                    vEnd = length
-                # 如果等分有值，复制一份length2，如果起终点有值，再减去
-                if divide > 0:
-                    length2 = length
-                    if vStart > 0:
-                        length2 = length - vStart
-                    if vEnd > 0:
-                        length2 = vEnd
-                    if vStart > 0 and vEnd > 0:
-                        length2 = vEnd - vStart  # length-(length-endpoint)-startpoint
-                    vDis = length2 / divide
-                    dis = vDis
-                else:
-                    dis = vDis
-
-                if vEnd > 0:
-                    length = vEnd
-                """
+            # QgsMessageLog.logMessage(f"vStart {vStart}, vEnd {vEnd},vLength {vLength},vDis {vDis},dis {dis},length {length}", "Chainage Tools",0)
 
             feats = []
-
-            # # define fields
-            # fields = QgsFields()
-            # # fields.append( QgsField(name="id", type=QVariant.Int))
-            # fields.append(QgsField("line_id", QMetaType.Type.Int if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Int))
-            # fields.append(QgsField("mileage_value", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
-            # fields.append(QgsField("dist", QMetaType.Type.Double if Qgis.QGIS_VERSION_INT > 33800 else QVariant.Double))
 
             def add_interpolate_custom(geom, length, mileage_value, id):
                 # Get a point along the line at the current distance
