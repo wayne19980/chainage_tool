@@ -52,6 +52,7 @@ from qgis.core import (
     QgsField,
     QgsFields,
     Qgis,
+    QgsMessageLog,
 )
 from math import ceil
 import copy
@@ -298,17 +299,35 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             """
             Creating Points at coordinates along the line
             """
-            vLength = vEnd - vStart
+            reverse = vEnd < vStart
+            if reverse:
+                # Extract the coordinates from the original geometry
+                coords = geom.asPolyline()
 
+                # Reverse the order of the points (QgsPointXY objects)
+                reversed_coords = coords[::-1]
+
+                # Create a new QgsGeometry with the reversed coordinates
+                geom = QgsGeometry.fromPolylineXY(reversed_coords)
+
+                vStart, vEnd = vEnd, vStart
+                
             # don't allow distance to be zero and loop endlessly
             # 如果间距为负，设为线段长
-            if vDis <= 0:
-                vDis = vLength
-                # vDis = geom.length()
+            vLength = vEnd - vStart
+            print()
+            vDis = abs(vDis)
+            
+            if vDis > vLength or vDis == 0:
+                    vDis = vLength
 
             length = geom.length()
+            print()
             lengthRatio = length / vLength
             dis = vDis * lengthRatio
+            print("vStart:", vStart, "vEnd:", vEnd, "vLength:", vLength, "vDis:", vDis, "dis:", dis, "length:", length)
+
+            QgsMessageLog.logMessage(f"vStart {vStart}, vEnd {vEnd},vLength {vLength},vDis {vDis},dis {dis},length {length}", "Chainage Tools",0)
             """
                 # 如果终点长>总长，设为总长
                 if length < vEnd:
@@ -417,8 +436,8 @@ class ChainageToolAlgorithm(QgsProcessingAlgorithm):
             attrs = feature.attributes()
             geom_type = geom.wkbType()
             # Pass looping if feature is not polyline
-            # if geom_type != 1:
-            #     pass
+            if geom_type != 2:
+                pass
             # else:
             # 2. vLength = eM - sM = IN4 - IN3; vD = IN5;<-get from attrs[field input]
             sM = feature[parameters[self.START_MILEAGE]]
